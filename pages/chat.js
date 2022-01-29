@@ -1,11 +1,29 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js'
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzQxNzI5MCwiZXhwIjoxOTU4OTkzMjkwfQ.HzQGEzibVSG5PsagL3dq9JN004Kf3SHcM_00yIDZuB8'
+const SUPABASE_URL = 'https://dtuyktpiqojkgpysrncj.supabase.co'
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
 
 export default function ChatPage() {
 
     const [mensagem, setMensagem] = React.useState('');
     const [listaDeMensagens, setListaDeMensagens] = React.useState([]);
+
+    React.useEffect(() => {
+        supabaseClient
+            .from('mensagens')
+            .select('*')
+            .order('id', { ascending: false })
+            .then(({ data }) => {
+                console.log('Dados da consulta', data)
+                setListaDeMensagens(data)
+            })
+    }, []);
+
     // Sua lógica vai aqui
     //Usuário:
     //Digita no campo do textarea
@@ -20,16 +38,23 @@ export default function ChatPage() {
 
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
-            id: listaDeMensagens.length,
+            // id: listaDeMensagens.length,
             de: 'fekuhnen',
             texto: novaMensagem,
-
-
         };
-        setListaDeMensagens([
-            mensagem,
-            ...listaDeMensagens
-        ])
+
+        supabaseClient
+            .from('mensagens')
+            .insert([
+                mensagem
+            ])
+            .then(({ data }) => {
+                console.log('Criando mensagem: ', data);
+                setListaDeMensagens([
+                    data[0],
+                    ...listaDeMensagens
+                ])
+            })
         setMensagem('');
     }
     return (
@@ -69,7 +94,6 @@ export default function ChatPage() {
                         padding: '16px',
                     }}
                 >
-
                     <MessageList mensagens={listaDeMensagens} />
                     {/* {listaDeMensagens.map((mensagemAtual) => {
                         return (
@@ -78,7 +102,6 @@ export default function ChatPage() {
                             </li>
                         )
                     })} */}
-
                     <Box
                         as="form"
                         styleSheet={{
@@ -150,7 +173,7 @@ function MessageList(props) {
                 marginBottom: '16px',
             }}
         >
-            {props.mensagem.map((mensagem) => {
+            {props.mensagens.map((mensagem) => {
                 return (
                     <Text
                         key={mensagem.id}
@@ -177,7 +200,7 @@ function MessageList(props) {
                                     display: 'inline-block',
                                     marginRight: '8px',
                                 }}
-                                src={`https://github.com/vanessametonini.png`}
+                                src={`https://github.com/${mensagem.de}.png`}
                             />
                             <Text tag="strong">
                                 {mensagem.de}
@@ -196,10 +219,7 @@ function MessageList(props) {
                         {mensagem.texto}
                     </Text>
                 );
-
             })}
-
-
         </Box>
     )
 }
